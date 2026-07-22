@@ -1,0 +1,19 @@
+# One-shot: generates a self-signed placeholder cert for any domain in
+# DOMAINS that certbot doesn't manage yet, so nginx has something to load
+# on a brand-new domain. See certbot-init/bootstrap.sh.
+[Unit]
+Description=Self-signed placeholder cert bootstrap
+
+[Container]
+ContainerName=cert-bootstrap
+Image=docker.io/alpine/openssl
+Pod=misbot-nginx-certbot.pod
+EnvironmentFile=%h/.config/misbot-nginx-certbot/domains.env
+Entrypoint=/bin/sh
+Exec=/bootstrap.sh
+Volume=%h/.config/misbot-nginx-certbot/certbot-init/bootstrap.sh:/bootstrap.sh:ro
+Volume=%h/.config/misbot-nginx-certbot/data/certbot/conf:/etc/letsencrypt
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes

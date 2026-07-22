@@ -1,0 +1,76 @@
+name: Deploy nginx-certbot reverse proxy
+
+on:
+  push:
+    branches:
+      # TODO: switch to `main` once this is merged.
+      - feat/add-misbot-service-revese-proxy
+  workflow_dispatch:
+
+# Never let two deploys race each other onto the host.
+concurrency:
+  group: deploy-nginx-certbot
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4.2.0
+
+      - name: Set up SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      # DOMAINS is committed in domains.env and shipped as-is; only STAGING is
+      # overridden per environment. vars.STAGING should be "0" (trusted certs)
+      # or "1" (Let's Encrypt staging). An unset variable becomes STAGING=,
+      # which the certbot entrypoint treats as non-staging (production).
+      - name: Override STAGING in domains.env
+        run: |
+          sed -i "s/^STAGING=.*/STAGING=${{ vars.STAGING }}/" domains.env
+          echo "Deploying with: $(grep '^STAGING=' domains.env)"
+
+      - name: Stop the pod
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "systemctl --user stop misbot-nginx-certbot-pod.service || true"
+
+      - name: Deploy files to host
+        run: |
+          HOST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"
+          BASE="~/.config/misbot-nginx-certbot"
+
+          # Create the config tree. data/certbot/{conf,www} hold issued certs and
+          # ACME state — created if missing, never overwritten, so certs persist.
+          ssh "$HOST" "mkdir -p \
+            ~/.config/containers/systemd \
+            $BASE/nginx/conf.d \
+            $BASE/certbot \
+            $BASE/certbot-init \
+            $BASE/data/certbot/conf \
+            $BASE/data/certbot/www"
+
+          ssh "$HOST" "rm -f ~/.config/containers/systemd/misbot-nginx-certbot*"
+          scp quadlets/* "$HOST:~/.config/containers/systemd/"
+
+          # Config + scripts referenced by the quadlet volume mounts.
+          scp domains.env "$HOST:$BASE/domains.env"
+          scp nginx/nginx.conf nginx/40-reload-watcher.sh "$HOST:$BASE/nginx/"
+          scp -r nginx/conf.d/. "$HOST:$BASE/nginx/conf.d/"
+          scp certbot/entrypoint.sh "$HOST:$BASE/certbot/"
+          scp certbot-init/bootstrap.sh "$HOST:$BASE/certbot-init/"
+
+      - name: Reload systemd and start the pod
+        run: |
+          HOST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"
+          # daemon-reload regenerates the .service units from the new quadlets.
+          ssh "$HOST" "systemctl --user daemon-reload"
+          ssh "$HOST" "systemctl --user start misbot-nginx-certbot-pod.service"

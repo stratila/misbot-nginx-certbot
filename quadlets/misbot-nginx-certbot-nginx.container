@@ -13,12 +13,11 @@ Pod=misbot-nginx-certbot.pod
 Volume=%h/.config/misbot-nginx-certbot/nginx/40-reload-watcher.sh:/docker-entrypoint.d/40-reload-watcher.sh:ro
 Volume=%h/.config/misbot-nginx-certbot/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 Volume=%h/.config/misbot-nginx-certbot/nginx/conf.d:/etc/nginx/conf.d:ro
-# Static content, one mount per domain. The in-container path mirrors the
-# domain (/usr/share/nginx/static/<domain>) so multiple static sites never
-# collide on a shared mount; each domain's conf aliases into its own subdir.
-Volume=/opt/misbot-nginx-certbot/domains/bot.minecraftislife.online/static:/usr/share/nginx/static/bot.minecraftislife.online:ro
 Volume=%h/.config/misbot-nginx-certbot/data/certbot/conf:/etc/letsencrypt
 Volume=%h/.config/misbot-nginx-certbot/data/certbot/www:/var/www/certbot
+# Bind mount for static data.
+Volume=%h/.config/misbot-nginx-certbot/domains/bot.minecraftislife.online/static:/usr/share/nginx/static/bot.minecraftislife.online:ro
+
 
 [Service]
 Restart=always

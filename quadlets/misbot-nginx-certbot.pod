@@ -3,8 +3,13 @@ Description=misbot nginx + certbot pod (nginx, cert-bootstrap, certbot)
 
 [Pod]
 PodName=certbot-nginx
-Network=misbot-nginx-certbot.network
 ExitPolicy=continue
+# No Network= — the pod uses the rootless default (pasta). nginx reaches the
+# host upstream via host.containers.internal, which pasta maps to the host
+# loopback per ~/.config/containers/containers.conf:
+#   [network]
+#   pasta_options = ["--map-host-loopback", "169.254.1.2"]
+# so the bot can stay bound to 127.0.0.1:8181 on the host.
 # Pod members share one netns, so certbot's entrypoint.sh http://nginx poll
 # can't use container-name DNS (only the pod infra is registered). Map it to the
 # shared loopback where nginx listens. Must live on the pod, not a container:

@@ -79,6 +79,15 @@ jobs:
           done
           [ -n "$dirs" ] && ssh "$HOST" "mkdir -p $dirs"
 
+      - name: Install containers.conf drop-in
+        run: |
+          HOST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"
+          # Merged over the host's containers.conf, so unrelated settings there
+          # are left alone. Takes effect on pod recreation, which the start
+          # step below does via --replace.
+          ssh "$HOST" "mkdir -p ~/.config/containers/containers.conf.d"
+          scp containers.conf.d/*.conf "$HOST:~/.config/containers/containers.conf.d/"
+
       - name: Reload systemd and start the pod
         run: |
           HOST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"

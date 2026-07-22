@@ -3,8 +3,7 @@ name: Deploy nginx-certbot reverse proxy
 on:
   push:
     branches:
-      # TODO: switch to `main` once this is merged.
-      - feat/add-misbot-service-revese-proxy
+      - main
   workflow_dispatch:
 
 # Never let two deploys race each other onto the host.

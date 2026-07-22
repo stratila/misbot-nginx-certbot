@@ -5,6 +5,11 @@ Description=misbot nginx + certbot pod (nginx, cert-bootstrap, certbot)
 PodName=certbot-nginx
 Network=misbot-nginx-certbot.network
 ExitPolicy=continue
+# Pod members share one netns, so certbot's entrypoint.sh http://nginx poll
+# can't use container-name DNS (only the pod infra is registered). Map it to the
+# shared loopback where nginx listens. Must live on the pod, not a container:
+# podman rejects per-container host entries when the netns is shared with a pod.
+AddHost=nginx:127.0.0.1
 # Rootless-friendly ports, same mapping as container-compose.yml.
 PublishPort=8080:80
 PublishPort=8443:443

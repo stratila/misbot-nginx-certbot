@@ -1,4 +1,9 @@
-# Preserves the compose file's custom bridge network so certbot's
-# entrypoint.sh can reach nginx by container-name DNS (http://nginx/...).
+# Gives the pod a netavark bridge instead of the rootless default (pasta).
+# Not needed for pod-internal traffic — members share one netns and reach each
+# other over localhost (certbot->nginx uses AddHost=nginx:127.0.0.1). It matters
+# only when nginx proxies to a host service via host.containers.internal: on the
+# bridge that reaches the host gateway directly, whereas pasta would need
+# --map-host-loopback. Drop this unit (and Network= in the .pod) if no upstream
+# runs on the host.
 [Network]
 NetworkName=certbot-nginx-net

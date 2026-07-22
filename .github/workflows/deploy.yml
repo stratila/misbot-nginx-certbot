@@ -68,6 +68,17 @@ jobs:
           scp certbot/entrypoint.sh "$HOST:$BASE/certbot/"
           scp certbot-init/bootstrap.sh "$HOST:$BASE/certbot-init/"
 
+      - name: Ensure static content dirs exist
+        run: |
+          HOST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"
+          # One /opt/.../static bind-mount source per domain in DOMAINS.
+          domains=$(grep '^DOMAINS=' domains.env | cut -d= -f2)
+          dirs=""
+          for d in ${domains//,/ }; do
+            dirs="$dirs /opt/misbot-nginx-certbot/domains/$d/static"
+          done
+          [ -n "$dirs" ] && ssh "$HOST" "mkdir -p $dirs"
+
       - name: Reload systemd and start the pod
         run: |
           HOST="${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"

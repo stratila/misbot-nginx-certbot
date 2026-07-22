@@ -1,0 +1,19 @@
+# No Requires=/After= on the bootstrap or nginx units on purpose:
+# entrypoint.sh polls nginx over HTTP itself instead of relying on unit
+# ordering (see the comment at the top of certbot/entrypoint.sh).
+[Unit]
+Description=certbot issuance and renewal loop
+
+[Container]
+ContainerName=certbot
+Image=docker.io/certbot/certbot
+Pod=misbot-nginx-certbot.pod
+EnvironmentFile=%h/.config/misbot-nginx-certbot/domains.env
+Entrypoint=/bin/sh
+Exec=/entrypoint.sh
+Volume=%h/.config/misbot-nginx-certbot/certbot/entrypoint.sh:/entrypoint.sh:ro
+Volume=%h/.config/misbot-nginx-certbot/data/certbot/conf:/etc/letsencrypt
+Volume=%h/.config/misbot-nginx-certbot/data/certbot/www:/var/www/certbot
+
+[Service]
+Restart=always

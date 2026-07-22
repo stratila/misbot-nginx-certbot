@@ -1,0 +1,4 @@
+# Preserves the compose file's custom bridge network so certbot's
+# entrypoint.sh can reach nginx by container-name DNS (http://nginx/...).
+[Network]
+NetworkName=certbot-nginx-net

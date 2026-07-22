@@ -1,0 +1,12 @@
+[Unit]
+Description=misbot nginx + certbot pod (nginx, cert-bootstrap, certbot)
+
+[Pod]
+PodName=certbot-nginx
+Network=misbot-nginx-certbot.network
+# Rootless-friendly ports, same mapping as container-compose.yml.
+PublishPort=8080:80
+PublishPort=8443:443
+
+[Install]
+WantedBy=default.target

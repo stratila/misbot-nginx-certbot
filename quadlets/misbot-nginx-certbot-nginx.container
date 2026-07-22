@@ -1,0 +1,20 @@
+# Waits for cert-bootstrap to finish (RemainAfterExit=yes on that oneshot
+# keeps its unit "active" after it exits, so Requires= here is satisfied
+# without podman-compose's hard-dependency problem — see the certbot unit).
+[Unit]
+Description=nginx reverse proxy
+After=misbot-nginx-certbot-cert-bootstrap.service
+Requires=misbot-nginx-certbot-cert-bootstrap.service
+
+[Container]
+ContainerName=nginx
+Image=docker.io/nginx:1.31.3
+Pod=misbot-nginx-certbot.pod
+Volume=%h/.config/misbot-nginx-certbot/nginx/40-reload-watcher.sh:/docker-entrypoint.d/40-reload-watcher.sh:ro
+Volume=%h/.config/misbot-nginx-certbot/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+Volume=%h/.config/misbot-nginx-certbot/nginx/conf.d:/etc/nginx/conf.d:ro
+Volume=%h/.config/misbot-nginx-certbot/data/certbot/conf:/etc/letsencrypt
+Volume=%h/.config/misbot-nginx-certbot/data/certbot/www:/var/www/certbot
+
+[Service]
+Restart=always
